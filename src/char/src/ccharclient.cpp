@@ -269,7 +269,6 @@ void CCharClient::onDisconnected() {
 
 bool CCharClient::sendCharSelectReply(RoseCommon::Packet::CliSelectCharReq&& P) {
   logger_->trace("CCharClient::sendCharSelectReply");
-
   if (loginState_ == eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to select a char before logging in.", get_id());
     return true;

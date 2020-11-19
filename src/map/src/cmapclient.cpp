@@ -101,6 +101,7 @@ bool CMapClient::handlePacket(uint8_t* _buffer) {
     return CRoseClient::handlePacket(_buffer);
   }
   if (entitySystem->dispatch_packet(entity, RoseCommon::fetchPacket(_buffer))) {
+      logger_->warn("Accepted packet 0x{0:02x}", to_underlying(CRosePacket::type(_buffer)));
       return true;
   }
   logger_->warn("Packet 0x{0:02x} not handled", to_underlying(CRosePacket::type(_buffer)));

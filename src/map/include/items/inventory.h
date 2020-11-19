@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "cli_equip_item.h"
+#include "cli_equip_item_ride.h"
 #include "cli_drop_item.h"
 
 class EntitySystem;
@@ -32,5 +33,6 @@ void pickup_item(EntitySystem&, RoseCommon::Entity entity, RoseCommon::Entity it
 bool add_zuly(EntitySystem&, RoseCommon::Entity, int64_t zuly);
 
 void equip_item_packet(EntitySystem&, RoseCommon::Entity, const RoseCommon::Packet::CliEquipItem&);
+void equip_item_ride_packet(EntitySystem&, RoseCommon::Entity, const RoseCommon::Packet::CliEquipItemRide&);
 void drop_item_packet(EntitySystem&, RoseCommon::Entity, const RoseCommon::Packet::CliDropItem&);
 }

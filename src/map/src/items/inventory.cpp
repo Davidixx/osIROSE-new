@@ -12,6 +12,7 @@
 #include "itemdb.h"
 
 #include "srv_equip_item.h"
+#include "srv_equip_item_ride.h"
 #include "srv_set_item.h"
 #include "srv_set_money.h"
 
@@ -21,6 +22,29 @@ using namespace RoseCommon;
 using namespace Items;
 
 namespace {
+
+inline bool is_spot_correct_riding(const EntitySystem& entitySystem, RoseCommon::Entity entity, size_t spot) {
+    const auto& item = entitySystem.get_component<ItemDef>(entity);
+    const RidingItem pos = static_cast<RidingItem>(spot);
+    if (pos >= MAX_ITEMS) {
+        return true;
+    }
+    switch (item.subtype / 10 % 10) {
+        case RidingSubType::FRAME:
+            return pos == RidingItem::BODY;
+        case RidingSubType::ENGINE_PART:
+            return pos == RidingItem::ENGINE;
+        case RidingSubType::WHEELS:
+            return pos == RidingItem::LEGS;
+        case RidingSubType::ABILITY_PART:
+            return pos == RidingItem::OPTION;
+        case RidingSubType::CART_WEAP:
+            return pos == RidingItem::ARMS;
+        default:
+            return false;
+    }
+}
+
 // only for items, not cart/castle gear
 inline bool is_spot_correct(const EntitySystem& entitySystem, RoseCommon::Entity entity, size_t spot) {
     const auto& item = entitySystem.get_component<ItemDef>(entity);
@@ -47,10 +71,13 @@ inline bool is_spot_correct(const EntitySystem& entitySystem, RoseCommon::Entity
             return pos == EquippedPosition::WEAPON_R;
         case ItemType::ITEM_WEAPON_L:
             return pos == EquippedPosition::WEAPON_L;
+        case ItemType::ITEM_RIDING:
+            return is_spot_correct_riding(entitySystem, entity, spot);
         default:
             return false;
     }
 }
+
 
 inline bool is_spot_equipped(size_t spot) {
     return spot < EquippedPosition::MAX_EQUIP_ITEMS;
@@ -178,12 +205,13 @@ void Items::swap_item(EntitySystem& entitySystem, RoseCommon::Entity entity, siz
 }
 
 ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity entity, size_t from, size_t to) {
+    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock(); //changed by davidixx
     const auto& inv = entitySystem.get_component<Component::Inventory>(entity);
 
     if (from < decltype(inv.getInventory())::offset() || from >= decltype(inv.getInventory())::size()) {
         return ReturnValue::WRONG_INDEX;
     }
-    if (to < decltype(inv.getEquipped())::offset() || to >= decltype(inv.getEquipped())::size()) {
+    if (to < decltype(inv.getEquipped())::offset() || (to >= decltype(inv.getEquipped())::size() && to < RidingItem::BODY) || to >= MAX_ITEMS) {
         return ReturnValue::WRONG_INDEX;
     }
 
@@ -210,10 +238,23 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
     }
     swap_item(entitySystem, entity, from, to);
     const auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
+    const auto& item = entitySystem.get_component<RoseCommon::ItemDef>(to_equip);
     {
-        const auto packet = RoseCommon::Packet::SrvEquipItem::create(basicInfo.id, to,
-                entitySystem.item_to_equipped<RoseCommon::Packet::SrvEquipItem>(inv.items[to]));
-        entitySystem.send_nearby(entity, packet);
+        switch (item.type) {
+            case ItemType::ITEM_RIDING:
+            {
+                const auto packet = RoseCommon::Packet::SrvEquipItemRide::create(basicInfo.id, static_cast<RoseCommon::Packet::SrvEquipItemRide::EquippedPositionRide>(to),
+                    entitySystem.item_to_equipped<RoseCommon::Packet::SrvEquipItemRide>(inv.items[to]), static_cast<size_t>(800));
+                entitySystem.send_map(packet);
+                break;
+            }
+            default:
+            {
+                const auto packet = RoseCommon::Packet::SrvEquipItem::create(basicInfo.id, to,
+                    entitySystem.item_to_equipped<RoseCommon::Packet::SrvEquipItem>(inv.items[to]));
+                entitySystem.send_map(packet);
+            }
+        }
     }
 
     RoseCommon::Packet::SrvSetItem::IndexAndItem index; index.set_index(to);
@@ -228,13 +269,13 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
 }
 
 ReturnValue Items::unequip_item(EntitySystem& entitySystem, RoseCommon::Entity entity, size_t from) {
-    const size_t to = get_first_available_spot(entitySystem, entity);
+    const auto& inv = entitySystem.get_component<Component::Inventory>(entity);
+    const size_t to = get_first_available_spot(entitySystem, entity, inv.items[from]);
     if (to == 0) {
         return ReturnValue::NO_SPACE;
     }
 
-    const auto& inv = entitySystem.get_component<Component::Inventory>(entity);
-    if (from < decltype(inv.getEquipped())::offset() || from >= decltype(inv.getEquipped())::size()) {
+    if (from < decltype(inv.getEquipped())::offset() || (from >= decltype(inv.getEquipped())::size() && from < RidingItem::BODY) || from >= MAX_ITEMS) {
         return ReturnValue::WRONG_INDEX;
     }
 
@@ -248,10 +289,22 @@ ReturnValue Items::unequip_item(EntitySystem& entitySystem, RoseCommon::Entity e
         }
     }
     swap_item(entitySystem, entity, from, to);
+    const auto& item = entitySystem.get_component<RoseCommon::ItemDef>(equipped);
     const auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
     {
-        const auto packet = RoseCommon::Packet::SrvEquipItem::create(basicInfo.id, from, {});
-        entitySystem.send_nearby(entity, packet);
+        switch (item.type) {
+            case ItemType::ITEM_RIDING:
+            {
+                const auto packet = RoseCommon::Packet::SrvEquipItemRide::create(basicInfo.id, static_cast<RoseCommon::Packet::SrvEquipItemRide::EquippedPositionRide>(from), {}, static_cast<size_t>(500));      
+                entitySystem.send_nearby(entity, packet);
+                break;
+            }
+            default:
+            {
+                const auto packet = RoseCommon::Packet::SrvEquipItem::create(basicInfo.id, from, {});
+                entitySystem.send_nearby(entity, packet);
+            }
+        }
     }
 
     RoseCommon::Packet::SrvSetItem::IndexAndItem index;
@@ -350,6 +403,19 @@ void Items::equip_item_packet(EntitySystem& entitySystem, RoseCommon::Entity ent
         unequip_item(entitySystem, entity, to):
         equip_item(entitySystem, entity, from, to);
     (void) res;
+}
+
+void Items::equip_item_ride_packet(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliEquipItemRide& packet) {
+    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
+    logger->trace("equip_item_ride_packet()");
+    logger->trace("from {} to {}", packet.get_index(), packet.get_slot()+135);
+    const auto from = packet.get_index();
+    const auto to = packet.get_slot() + 135;
+    const auto res = from == 0 ?
+        unequip_item(entitySystem, entity, to):
+        equip_item(entitySystem, entity, from, to);
+    (void) res;
+
 }
 
 void Items::drop_item_packet(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliDropItem& packet) {

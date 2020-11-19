@@ -9,12 +9,20 @@ enum BulletType : uint8_t {
 };
 
 enum RidingItem : uint8_t {
-    BODY = 0,
-    ENGINE = 1,
+    BODY = 135,
+    ENGINE = 136,
     LEGS,
     OPTION, // weapon or back seat
     ARMS,
-    MAX_RIDING_ITEMS
+    MAX_RIDING_ITEMS = 5
+};
+
+enum RidingSubType : uint8_t {
+    FRAME = 1,
+    ENGINE_PART = 2,
+    WHEELS = 3,
+    ABILITY_PART = 5,
+    CART_WEAP = 7
 };
 
 enum EquippedPosition : uint8_t {
@@ -33,10 +41,10 @@ enum EquippedPosition : uint8_t {
 };
 
 enum MoveMode : uint8_t {
+    SITTING = 1,
     WALK = 2,
     RUN = 3,
     DRIVE = 4,
-    // RIDEON = 4
 };
 
 enum Command : uint16_t {

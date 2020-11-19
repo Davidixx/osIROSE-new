@@ -12,6 +12,7 @@
 #include "cli_delete_char_req.h"
 #include "cli_drop_item.h"
 #include "cli_equip_item.h"
+#include "cli_equip_item_ride.h"
 #include "cli_hp_req.h"
 #include "cli_join_server_req.h"
 #include "cli_login_req.h"
@@ -22,6 +23,7 @@
 #include "cli_select_char_req.h"
 #include "cli_shout_chat.h"
 #include "cli_toggle_move.h"
+#include "cli_set_animation.h"
 #include "cli_srv_select_req.h"
 #include "cli_stop_moving.h"
 #include "cli_teleport_req.h"
@@ -53,6 +55,7 @@
 #include "srv_screen_shot_time_reply.h"
 #include "srv_select_char_reply.h"
 #include "srv_set_item.h"
+#include "srv_set_animation.h"
 #include "srv_shout_chat.h"
 #include "srv_set_hp_and_mp.h"
 #include "srv_srv_select_reply.h"
@@ -60,6 +63,7 @@
 #include "srv_teleport_reply.h"
 #include "srv_whisper_chat.h"
 #include "srv_stat_add_reply.h"
+#include "srv_equip_item_ride.h"
 
 using namespace RoseCommon;
 using namespace RoseCommon::Packet;
@@ -80,10 +84,12 @@ void RoseCommon::register_recv_packets() {
     REGISTER_RECV_PACKET(ePacketType::PAKCS_HP_REQ, CliHpReq);
     REGISTER_RECV_PACKET(ePacketType::PAKCS_DROP_ITEM, CliDropItem);
     REGISTER_RECV_PACKET(ePacketType::PAKCS_EQUIP_ITEM, CliEquipItem);
+    REGISTER_RECV_PACKET(ePacketType::PAKCS_EQUIP_ITEM_RIDE, CliEquipItemRide);
     REGISTER_RECV_PACKET(ePacketType::PAKCS_LOGIN_REQ, CliLoginReq);
     REGISTER_RECV_PACKET(ePacketType::PAKCS_MOUSE_CMD, CliMouseCmd);
     REGISTER_RECV_PACKET(ePacketType::PAKCS_NORMAL_CHAT, CliNormalChat);
     REGISTER_RECV_PACKET(ePacketType::PAKCS_TOGGLE_MOVE, CliToggleMove);
+    REGISTER_RECV_PACKET(ePacketType::PAKCS_SET_ANIMATION, CliSetAnimation);
     REGISTER_RECV_PACKET(ePacketType::PAKCS_REVIVE_REQ, CliReviveReq);
     REGISTER_RECV_PACKET(ePacketType::PAKCS_SELECT_CHAR_REQ, CliSelectCharReq);
     REGISTER_RECV_PACKET(ePacketType::PAKCS_SHOUT_CHAT, CliShoutChat);
@@ -118,7 +124,9 @@ void RoseCommon::register_send_packets() {
     REGISTER_SEND_PACKET(ePacketType::PAKWC_NORMAL_CHAT, SrvNormalChat);
     REGISTER_SEND_PACKET(ePacketType::PAKWC_NPC_CHAR, SrvNpcChar);
     REGISTER_SEND_PACKET(ePacketType::PAKWC_PLAYER_CHAR, SrvPlayerChar);
+    REGISTER_SEND_PACKET(ePacketType::PAKWC_EQUIP_ITEM_RIDE, SrvEquipItemRide);
     REGISTER_SEND_PACKET(ePacketType::PAKWC_TOGGLE_MOVE, SrvToggleMove);
+    REGISTER_SEND_PACKET(ePacketType::PACWC_SET_ANIMATION, SrvSetAnimation);
     REGISTER_SEND_PACKET(ePacketType::PAKWC_QUEST_DATA, SrvQuestData);
     REGISTER_SEND_PACKET(ePacketType::PAKWC_REMOVE_OBJECT, SrvRemoveObject);
     REGISTER_SEND_PACKET(ePacketType::PAKSC_SCREEN_SHOT_TIME_REPLY, SrvScreenShotTimeReply);
