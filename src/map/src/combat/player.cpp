@@ -58,6 +58,18 @@ void Player::add_stat(EntitySystem& entitySystem, RoseCommon::Entity entity, con
 
 }
 
+void Player::run_walk_decision(EntitySystem& entitySystem, RoseCommon::Entity entity) {
+	auto& computedValues = entitySystem.get_component<Component::ComputedValues>(entity);
+	computedValues.runSpeed = Calculations::get_runspeed(entitySystem, entity); //get real run speed
+	if (computedValues.moveMode == MoveMode::RUN) {
+		computedValues.moveMode = MoveMode::WALK;
+	} else if (computedValues.moveMode == MoveMode::WALK && computedValues.runSpeed > RoseCommon::WALK_SPEED) {
+		computedValues.moveMode = MoveMode::RUN;
+	} else {
+		computedValues.moveMode = MoveMode::WALK;
+	}
+}
+
 void Player::toggle_player_move(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliToggleMove& packet) {
     auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
 
@@ -65,17 +77,14 @@ void Player::toggle_player_move(EntitySystem& entitySystem, RoseCommon::Entity e
 	auto& computedValues = entitySystem.get_component<Component::ComputedValues>(entity);
 	logger->warn("moveType is {}", moveType);
 	if(moveType == 0) {
-		if (computedValues.moveMode == MoveMode::RUN) {
-			computedValues.moveMode = MoveMode::WALK;
-		} else if (computedValues.moveMode == MoveMode::WALK) {
-			computedValues.runSpeed = Calculations::get_runspeed(entitySystem, entity); //get real run speed
-			computedValues.moveMode = MoveMode::RUN;
+		if (computedValues.moveMode != MoveMode::DRIVE) {
+			run_walk_decision(entitySystem, entity);
 		}
 	} else if (moveType == 1) {
 		if (computedValues.moveMode == MoveMode::SITTING) {
-			logger->warn("im here");
 			computedValues.moveMode = MoveMode::RUN;
-			computedValues.command = Command::MOVE;
+			logger->warn("im here");
+			run_walk_decision(entitySystem, entity);
 		} else if (computedValues.moveMode == MoveMode::WALK || computedValues.moveMode == MoveMode::RUN) {
 			logger->warn("nope im here?");
 			computedValues.command = Command::SIT;
@@ -83,8 +92,8 @@ void Player::toggle_player_move(EntitySystem& entitySystem, RoseCommon::Entity e
 		}
 	} else if (moveType == 2) {
 		if (computedValues.moveMode == MoveMode::DRIVE) {
-			computedValues.runSpeed = Calculations::get_runspeed(entitySystem, entity); //get real run speed
-			computedValues.moveMode = MoveMode::RUN;
+			computedValues.moveMode = MoveMode::WALK;
+			run_walk_decision(entitySystem, entity);
 		} else if (computedValues.moveMode == MoveMode::WALK || computedValues.moveMode == MoveMode::RUN) {
 			computedValues.moveMode = MoveMode::DRIVE;
 			//calc the real moving speed

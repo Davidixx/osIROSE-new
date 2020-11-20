@@ -12,5 +12,6 @@ class EntitySystem;
 namespace Player {
 void add_stat(EntitySystem&, RoseCommon::Entity, const RoseCommon::Packet::CliStatAddReq&);
 void toggle_player_move(EntitySystem&, RoseCommon::Entity, const RoseCommon::Packet::CliToggleMove&);
+void run_walk_decision(EntitySystem&, RoseCommon::Entity);
 void set_animation(EntitySystem&, RoseCommon::Entity, const RoseCommon::Packet::CliSetAnimation&);
 }
