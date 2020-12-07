@@ -245,14 +245,14 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
             {
                 const auto packet = RoseCommon::Packet::SrvEquipItemRide::create(basicInfo.id, static_cast<RoseCommon::Packet::SrvEquipItemRide::EquippedPositionRide>(to),
                     entitySystem.item_to_equipped<RoseCommon::Packet::SrvEquipItemRide>(inv.items[to]), static_cast<size_t>(800));
-                entitySystem.send_map(packet);
+                entitySystem.send_nearby(entity, packet);
                 break;
             }
             default:
             {
                 const auto packet = RoseCommon::Packet::SrvEquipItem::create(basicInfo.id, to,
                     entitySystem.item_to_equipped<RoseCommon::Packet::SrvEquipItem>(inv.items[to]));
-                entitySystem.send_map(packet);
+                entitySystem.send_nearby(entity, packet);
             }
         }
     }
@@ -420,7 +420,7 @@ void Items::equip_item_ride_packet(EntitySystem& entitySystem, RoseCommon::Entit
 
 void Items::drop_item_packet(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliDropItem& packet) {
     auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-    logger->trace("equip_item_packet()");
+    logger->trace("drop_item_packet()");
     logger->trace("drop {}x{}", packet.get_index(), packet.get_quantity());
     const auto index = packet.get_index();
     const auto quantity = packet.get_quantity();

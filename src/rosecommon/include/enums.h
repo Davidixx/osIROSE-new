@@ -42,9 +42,15 @@ enum EquippedPosition : uint8_t {
 
 enum MoveMode : uint8_t {
     SITTING = 1,
-    WALK = 2,
-    RUN = 3,
-    DRIVE = 4,
+    WALK,
+    RUN,
+    DRIVE
+};
+
+enum ToggleType : uint8_t {
+    TOGGLE_RUN = 0,
+    TOGGLE_SIT = 1,
+    TOGGLE_DRIVE = 2
 };
 
 enum Command : uint16_t {

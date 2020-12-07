@@ -26,11 +26,12 @@ void Mouse::mouse_cmd(EntitySystem& entitySystem, Entity entity, const CliMouseC
     const auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
     const auto& pos = entitySystem.get_component<Component::Position>(entity);
     auto& dest = entitySystem.add_or_replace_component<Component::Destination>(entity);
-    const auto& computedValues = entitySystem.get_component<Component::ComputedValues>(entity);
+    auto& computedValues = entitySystem.get_component<Component::ComputedValues>(entity);
 
     if (computedValues.moveMode == MoveMode::SITTING) {
+        computedValues.command = Command::STOP;
         Player::run_walk_decision(entitySystem, entity);
-        auto pToggle = Packet::SrvToggleMove::create(static_cast<Packet::SrvToggleMove::ToggleMove>(computedValues.moveMode));
+        auto pToggle = Packet::SrvToggleMove::create(static_cast<Packet::SrvToggleMove::ToggleMove>(MoveMode::SITTING));
         pToggle.set_run_speed(computedValues.runSpeed);
         pToggle.set_object_id(basicInfo.id);
         entitySystem.send_map(pToggle);
