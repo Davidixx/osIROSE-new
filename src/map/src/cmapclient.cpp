@@ -123,7 +123,7 @@ void CMapClient::send(const RoseCommon::CRosePacket& packet, bool force) {
 }
 
 void CMapClient::updateSession() {
-  logger_->trace("CMapClient::updateSession()");
+  logger_->warn("CMapClient::updateSession()");  //davidixx
   using namespace std::chrono_literals;
   static std::chrono::steady_clock::time_point time{};
 
@@ -137,7 +137,7 @@ void CMapClient::updateSession() {
 }
 
 void CMapClient::onDisconnected() {
-  logger_->trace("CMapClient::OnDisconnected()");
+  logger_->warn("CMapClient::OnDisconnected()");  //davidixx
   if (login_state_ == eSTATE::DEFAULT) return;
   auto tmp_state = login_state_;
   login_state_ = eSTATE::DEFAULT;
@@ -152,7 +152,7 @@ void CMapClient::onDisconnected() {
 }
 
 bool CMapClient::changeCharacterReply([[maybe_unused]] RoseCommon::Packet::CliChangeCharReq&& P) {
-  logger_->trace("CMapClient::changeCharacterReply()");
+  logger_->warn("CMapClient::changeCharacterReply()");  //davidixx
   login_state_ = eSTATE::SWITCHING;
   auto conn = Core::connectionPool.getConnection<Core::Osirose>();
   Core::SessionTable sessions{};
@@ -162,14 +162,14 @@ bool CMapClient::changeCharacterReply([[maybe_unused]] RoseCommon::Packet::CliCh
 }
 
 bool CMapClient::logoutReply() {
-  logger_->trace("CMapClient::logoutReply()");
+  logger_->warn("CMapClient::logoutReply()"); //davidixx
   uint16_t waitTime = 0;
   CRoseClient::send(Packet::SrvLogoutReply::create(waitTime));
   return true;
 }
 
 bool CMapClient::joinServerReply(RoseCommon::Packet::CliJoinServerReq&& P) {
-  logger_->trace("CMapClient::joinServerReply()");
+  logger_->warn("CMapClient::joinServerReply()"); //davidixx
 
   if (login_state_ != eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to login when already logged in.", get_id());
@@ -216,7 +216,7 @@ bool CMapClient::joinServerReply(RoseCommon::Packet::CliJoinServerReq&& P) {
 
           auto packet = Packet::SrvSelectCharReply::create();
           const auto& characterGraphics = entitySystem->get_component<Component::CharacterGraphics>(entity);
-          auto& position = entitySystem->get_component<Component::Position>(entity);
+          const auto& position = entitySystem->get_component<Component::Position>(entity);
           const auto& inventory = entitySystem->get_component<Component::Inventory>(entity);
           const auto& faction = entitySystem->get_component<Component::Faction>(entity);
           const auto& guild = entitySystem->get_component<Component::Guild>(entity);
@@ -231,13 +231,9 @@ bool CMapClient::joinServerReply(RoseCommon::Packet::CliJoinServerReq&& P) {
           computed_values.runSpeed = Calculations::get_runspeed(*entitySystem, entity);
           packet.set_race(characterGraphics.race);
 
-          if(position.map == 20)
-          {
-            auto spawn = Combat::get_spawn_point(*entitySystem, entity, Packet::CliReviveReq::ReviveRequest::START_POSITION);
-            position.map = std::get<0>(spawn);
-            position.x = std::get<1>(spawn);
-            position.y = std::get<2>(spawn);
-          }
+
+          auto spawn = Combat::get_spawn_point(*entitySystem, entity, Packet::CliReviveReq::ReviveRequest::START_POSITION);
+          entitySystem->update_position(entity, std::get<1>(spawn), std::get<2>(spawn));
 
           packet.set_map(position.map);
           packet.set_x(position.x);

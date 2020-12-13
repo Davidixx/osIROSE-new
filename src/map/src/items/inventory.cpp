@@ -140,6 +140,7 @@ ReturnValue Items::add_item(EntitySystem& entitySystem, RoseCommon::Entity entit
         if (i.count + it.count < RoseCommon::MAX_STACK) {
             // below max stack
             i.count += it.count;
+            entitySystem.delete_entity(item);
         } else {
             // split the stack in two or more
             const uint32_t stack_tmp1 = i.count;
@@ -152,7 +153,6 @@ ReturnValue Items::add_item(EntitySystem& entitySystem, RoseCommon::Entity entit
                 return ReturnValue::NO_SPACE;
             }
         }
-        entitySystem.delete_entity(item);
     }
     RoseCommon::Packet::SrvSetItem::IndexAndItem index; index.set_index(pos);
     index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(inv.items[pos]));
@@ -254,6 +254,7 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
                 const auto packet = RoseCommon::Packet::SrvEquipItem::create(basicInfo.id, to,
                     entitySystem.item_to_equipped<RoseCommon::Packet::SrvEquipItem>(inv.items[to]));
                 entitySystem.send_nearby(entity, packet);
+                break;
             }
         }
     }
@@ -304,6 +305,7 @@ ReturnValue Items::unequip_item(EntitySystem& entitySystem, RoseCommon::Entity e
             {
                 const auto packet = RoseCommon::Packet::SrvEquipItem::create(basicInfo.id, from, {});
                 entitySystem.send_nearby(entity, packet);
+                break;
             }
         }
     }

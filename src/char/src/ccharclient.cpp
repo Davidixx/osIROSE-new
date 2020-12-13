@@ -88,6 +88,7 @@ bool CCharClient::handlePacket(uint8_t *_buffer) {
       updateSession();
       [[fallthrough]];
     default:
+      logger_->warn("Accepted packet 0x{0:02x}", to_underlying(CRosePacket::type(_buffer)));
       CRoseClient::handlePacket(_buffer);
   }
   return true;
@@ -98,14 +99,14 @@ void CCharClient::updateSession() {
   static std::chrono::steady_clock::time_point time{};
   if (Core::Time::GetTickCount() - time < 2min) return;
   time = Core::Time::GetTickCount();
-  logger_->trace("CCharClient::updateSession()");
+  logger_->warn("CCharClient::updateSession()"); //davidixx
   Core::SessionTable session{};
   auto conn = Core::connectionPool.getConnection<Core::Osirose>();
   conn(sqlpp::update(session).set(session.time = std::chrono::system_clock::now()).where(session.userid == userId_));
 }
 
 bool CCharClient::joinServerReply(RoseCommon::Packet::CliJoinServerReq&& P) {
-  logger_->trace("CCharClient::joinServerReply");
+  logger_->warn("CCharClient::joinServerReply"); //davidixx
 
   if (loginState_ != eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to login when already logged in.", get_id());
@@ -149,7 +150,7 @@ bool CCharClient::joinServerReply(RoseCommon::Packet::CliJoinServerReq&& P) {
 }
 
 bool CCharClient::sendCharListReply() {
-  logger_->trace("CCharClient::sendCharListReply");
+  logger_->warn("CCharClient::sendCharListReply"); //davidixx
 
   if (loginState_ == eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to get the char list before logging in.", get_id());
@@ -195,7 +196,7 @@ bool CCharClient::sendCharListReply() {
 }
 
 bool CCharClient::sendCharCreateReply(RoseCommon::Packet::CliCreateCharReq&& P) {
-  logger_->trace("CCharClient::sendCharCreateReply");
+  logger_->warn("CCharClient::sendCharCreateReply"); //davidixx
 
   if (loginState_ == eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to get the create a char before logging in.", get_id());
@@ -219,7 +220,7 @@ bool CCharClient::sendCharCreateReply(RoseCommon::Packet::CliCreateCharReq&& P) 
 }
 
 bool CCharClient::sendCharDeleteReply(RoseCommon::Packet::CliDeleteCharReq&& P) {
-  logger_->trace("CCharClient::sendCharDeleteReply");
+  logger_->warn("CCharClient::sendCharDeleteReply"); //davidixx
 
   if (loginState_ == eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to delete a char before logging in.", get_id());
@@ -257,7 +258,7 @@ bool CCharClient::sendCharDeleteReply(RoseCommon::Packet::CliDeleteCharReq&& P) 
 }
 
 void CCharClient::onDisconnected() {
-  logger_->trace("CCharClient::onDisconnected()");
+  logger_->warn("CCharClient::onDisconnected()"); //davidixx
   Core::SessionTable session{};
   Core::AccountTable table{};
   auto conn = Core::connectionPool.getConnection<Core::Osirose>();
@@ -268,7 +269,7 @@ void CCharClient::onDisconnected() {
 }
 
 bool CCharClient::sendCharSelectReply(RoseCommon::Packet::CliSelectCharReq&& P) {
-  logger_->trace("CCharClient::sendCharSelectReply");
+  logger_->warn("CCharClient::sendCharSelectReply"); //davidixx
   if (loginState_ == eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to select a char before logging in.", get_id());
     return true;
