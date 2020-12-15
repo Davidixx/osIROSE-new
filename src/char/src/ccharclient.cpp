@@ -133,11 +133,11 @@ bool CCharClient::joinServerReply(RoseCommon::Packet::CliJoinServerReq&& P) {
 
       sessionId_ = sessionID;
       
-      logger_->trace("Client {} accepted with sessionid {}.", get_id(), sessionId_);
+      logger_->debug("Client {} accepted with sessionid {}.", get_id(), sessionId_);
       auto packet = Packet::SrvJoinServerReply::create(Packet::SrvJoinServerReply::OK, std::time(nullptr));
       send(packet);
     } else {
-      logger_->trace("Client {} failed the session check.", get_id());
+      logger_->debug("Client {} failed the session check.", get_id());
       auto packet = Packet::SrvJoinServerReply::create(Packet::SrvJoinServerReply::INVALID_PASSWORD, 0);
       send(packet);
     }

@@ -19,6 +19,7 @@
 #include <limits>
 
 using namespace RoseCommon;
+using namespace RoseCommon::Packet;
 using namespace Items;
 
 namespace {
@@ -243,8 +244,9 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
         switch (item.type) {
             case ItemType::ITEM_RIDING:
             {
-                const auto packet = RoseCommon::Packet::SrvEquipItemRide::create(basicInfo.id, static_cast<RoseCommon::Packet::SrvEquipItemRide::EquippedPositionRide>(to),
-                    entitySystem.item_to_equipped<RoseCommon::Packet::SrvEquipItemRide>(inv.items[to]), static_cast<size_t>(800)); // FIX: calculate speed and change the static 800 value
+                const auto packet = SrvEquipItemRide::create(basicInfo.id, 
+                    static_cast<SrvEquipItemRide::EquippedPositionRide>(to), entitySystem.item_to_equipped<SrvEquipItemRide>(inv.items[to]), 
+                        static_cast<size_t>(800)); // FIX: calculate speed and change the static 800 value
                 entitySystem.send_nearby(entity, packet);
                 break;
             }
@@ -296,7 +298,8 @@ ReturnValue Items::unequip_item(EntitySystem& entitySystem, RoseCommon::Entity e
         switch (item.type) {
             case ItemType::ITEM_RIDING:
             {
-                const auto packet = RoseCommon::Packet::SrvEquipItemRide::create(basicInfo.id, static_cast<RoseCommon::Packet::SrvEquipItemRide::EquippedPositionRide>(from), {}, static_cast<size_t>(500)); // FIX: calculate speed and change the static 500 value    
+                const auto packet = SrvEquipItemRide::create(basicInfo.id, 
+                    static_cast<SrvEquipItemRide::EquippedPositionRide>(from), {}, static_cast<size_t>(500)); // FIX: calculate speed and change the static 500 value    
                 entitySystem.send_nearby(entity, packet);
                 break;
             }

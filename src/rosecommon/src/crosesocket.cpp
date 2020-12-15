@@ -243,7 +243,7 @@ bool CRoseSocket::onServerReceived(uint16_t socket_id_, uint16_t& packet_size_, 
   }
 #endif
 
-  logger_->debug("Received a packet on CRoseSocket {2}: Header[{0}, 0x{1:04x}]", CRosePacket::size(buffer_), (uint16_t)CRosePacket::type(buffer_), get_id()); //davidixx
+  logger_->trace("Received a packet on CRoseSocket {2}: Header[{0}, 0x{1:04x}]", CRosePacket::size(buffer_), (uint16_t)CRosePacket::type(buffer_), get_id());
 #ifdef SPDLOG_TRACE_ON
   fmt::MemoryWriter out;
   for(int i = 0; i < CRosePacket::size(buffer_); i++)
