@@ -206,7 +206,6 @@ void Items::swap_item(EntitySystem& entitySystem, RoseCommon::Entity entity, siz
 }
 
 ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity entity, size_t from, size_t to) {
-    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock(); //changed by davidixx
     const auto& inv = entitySystem.get_component<Component::Inventory>(entity);
 
     if (from < decltype(inv.getInventory())::offset() || from >= decltype(inv.getInventory())::size()) {
@@ -245,7 +244,7 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
             case ItemType::ITEM_RIDING:
             {
                 const auto packet = RoseCommon::Packet::SrvEquipItemRide::create(basicInfo.id, static_cast<RoseCommon::Packet::SrvEquipItemRide::EquippedPositionRide>(to),
-                    entitySystem.item_to_equipped<RoseCommon::Packet::SrvEquipItemRide>(inv.items[to]), static_cast<size_t>(800));
+                    entitySystem.item_to_equipped<RoseCommon::Packet::SrvEquipItemRide>(inv.items[to]), static_cast<size_t>(800)); // FIX: calculate speed and change the static 800 value
                 entitySystem.send_nearby(entity, packet);
                 break;
             }
@@ -297,7 +296,7 @@ ReturnValue Items::unequip_item(EntitySystem& entitySystem, RoseCommon::Entity e
         switch (item.type) {
             case ItemType::ITEM_RIDING:
             {
-                const auto packet = RoseCommon::Packet::SrvEquipItemRide::create(basicInfo.id, static_cast<RoseCommon::Packet::SrvEquipItemRide::EquippedPositionRide>(from), {}, static_cast<size_t>(500));      
+                const auto packet = RoseCommon::Packet::SrvEquipItemRide::create(basicInfo.id, static_cast<RoseCommon::Packet::SrvEquipItemRide::EquippedPositionRide>(from), {}, static_cast<size_t>(500)); // FIX: calculate speed and change the static 500 value    
                 entitySystem.send_nearby(entity, packet);
                 break;
             }
@@ -411,9 +410,9 @@ void Items::equip_item_packet(EntitySystem& entitySystem, RoseCommon::Entity ent
 void Items::equip_item_ride_packet(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliEquipItemRide& packet) {
     auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
     logger->trace("equip_item_ride_packet()");
-    logger->trace("from {} to {}", packet.get_index(), packet.get_slot()+135);
+    logger->trace("from {} to {}", packet.get_index(), packet.get_slot() + RidingItem::BODY);
     const auto from = packet.get_index();
-    const auto to = packet.get_slot() + 135;
+    const auto to = packet.get_slot() + RidingItem::BODY;
     const auto res = from == 0 ?
         unequip_item(entitySystem, entity, to):
         equip_item(entitySystem, entity, from, to);

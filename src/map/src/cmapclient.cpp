@@ -101,7 +101,7 @@ bool CMapClient::handlePacket(uint8_t* _buffer) {
     return CRoseClient::handlePacket(_buffer);
   }
   if (entitySystem->dispatch_packet(entity, RoseCommon::fetchPacket(_buffer))) {
-      logger_->warn("Accepted packet 0x{0:02x}", to_underlying(CRosePacket::type(_buffer)));
+      logger_->debug("Accepted packet 0x{0:02x}", to_underlying(CRosePacket::type(_buffer)));
       return true;
   }
   logger_->warn("Packet 0x{0:02x} not handled", to_underlying(CRosePacket::type(_buffer)));
@@ -123,7 +123,7 @@ void CMapClient::send(const RoseCommon::CRosePacket& packet, bool force) {
 }
 
 void CMapClient::updateSession() {
-  logger_->warn("CMapClient::updateSession()");  //davidixx
+  logger_->trace("CMapClient::updateSession()");
   using namespace std::chrono_literals;
   static std::chrono::steady_clock::time_point time{};
 
@@ -137,7 +137,7 @@ void CMapClient::updateSession() {
 }
 
 void CMapClient::onDisconnected() {
-  logger_->warn("CMapClient::OnDisconnected()");  //davidixx
+  logger_->trace("CMapClient::OnDisconnected()");
   if (login_state_ == eSTATE::DEFAULT) return;
   auto tmp_state = login_state_;
   login_state_ = eSTATE::DEFAULT;
@@ -152,7 +152,7 @@ void CMapClient::onDisconnected() {
 }
 
 bool CMapClient::changeCharacterReply([[maybe_unused]] RoseCommon::Packet::CliChangeCharReq&& P) {
-  logger_->warn("CMapClient::changeCharacterReply()");  //davidixx
+  logger_->trace("CMapClient::changeCharacterReply()");
   login_state_ = eSTATE::SWITCHING;
   auto conn = Core::connectionPool.getConnection<Core::Osirose>();
   Core::SessionTable sessions{};
@@ -162,14 +162,14 @@ bool CMapClient::changeCharacterReply([[maybe_unused]] RoseCommon::Packet::CliCh
 }
 
 bool CMapClient::logoutReply() {
-  logger_->warn("CMapClient::logoutReply()"); //davidixx
+  logger_->trace("CMapClient::logoutReply()");
   uint16_t waitTime = 0;
   CRoseClient::send(Packet::SrvLogoutReply::create(waitTime));
   return true;
 }
 
 bool CMapClient::joinServerReply(RoseCommon::Packet::CliJoinServerReq&& P) {
-  logger_->warn("CMapClient::joinServerReply()"); //davidixx
+  logger_->trace("CMapClient::joinServerReply()");
 
   if (login_state_ != eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to login when already logged in.", get_id());

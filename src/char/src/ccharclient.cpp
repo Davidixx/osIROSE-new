@@ -88,7 +88,7 @@ bool CCharClient::handlePacket(uint8_t *_buffer) {
       updateSession();
       [[fallthrough]];
     default:
-      logger_->warn("Accepted packet 0x{0:02x}", to_underlying(CRosePacket::type(_buffer)));
+      logger_->debug("Accepted packet 0x{0:02x}", to_underlying(CRosePacket::type(_buffer)));
       CRoseClient::handlePacket(_buffer);
   }
   return true;
@@ -99,14 +99,14 @@ void CCharClient::updateSession() {
   static std::chrono::steady_clock::time_point time{};
   if (Core::Time::GetTickCount() - time < 2min) return;
   time = Core::Time::GetTickCount();
-  logger_->warn("CCharClient::updateSession()"); //davidixx
+  logger_->trace("CCharClient::updateSession()");
   Core::SessionTable session{};
   auto conn = Core::connectionPool.getConnection<Core::Osirose>();
   conn(sqlpp::update(session).set(session.time = std::chrono::system_clock::now()).where(session.userid == userId_));
 }
 
 bool CCharClient::joinServerReply(RoseCommon::Packet::CliJoinServerReq&& P) {
-  logger_->warn("CCharClient::joinServerReply"); //davidixx
+  logger_->trace("CCharClient::joinServerReply");
 
   if (loginState_ != eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to login when already logged in.", get_id());
@@ -133,11 +133,11 @@ bool CCharClient::joinServerReply(RoseCommon::Packet::CliJoinServerReq&& P) {
 
       sessionId_ = sessionID;
       
-      logger_->debug("Client {} accepted with sessionid {}.", get_id(), sessionId_);
+      logger_->trace("Client {} accepted with sessionid {}.", get_id(), sessionId_);
       auto packet = Packet::SrvJoinServerReply::create(Packet::SrvJoinServerReply::OK, std::time(nullptr));
       send(packet);
     } else {
-      logger_->debug("Client {} failed the session check.", get_id());
+      logger_->trace("Client {} failed the session check.", get_id());
       auto packet = Packet::SrvJoinServerReply::create(Packet::SrvJoinServerReply::INVALID_PASSWORD, 0);
       send(packet);
     }
@@ -150,7 +150,7 @@ bool CCharClient::joinServerReply(RoseCommon::Packet::CliJoinServerReq&& P) {
 }
 
 bool CCharClient::sendCharListReply() {
-  logger_->warn("CCharClient::sendCharListReply"); //davidixx
+  logger_->trace("CCharClient::sendCharListReply");
 
   if (loginState_ == eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to get the char list before logging in.", get_id());
@@ -196,7 +196,7 @@ bool CCharClient::sendCharListReply() {
 }
 
 bool CCharClient::sendCharCreateReply(RoseCommon::Packet::CliCreateCharReq&& P) {
-  logger_->warn("CCharClient::sendCharCreateReply"); //davidixx
+  logger_->trace("CCharClient::sendCharCreateReply");
 
   if (loginState_ == eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to get the create a char before logging in.", get_id());
@@ -220,7 +220,7 @@ bool CCharClient::sendCharCreateReply(RoseCommon::Packet::CliCreateCharReq&& P) 
 }
 
 bool CCharClient::sendCharDeleteReply(RoseCommon::Packet::CliDeleteCharReq&& P) {
-  logger_->warn("CCharClient::sendCharDeleteReply"); //davidixx
+  logger_->trace("CCharClient::sendCharDeleteReply");
 
   if (loginState_ == eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to delete a char before logging in.", get_id());
@@ -258,7 +258,7 @@ bool CCharClient::sendCharDeleteReply(RoseCommon::Packet::CliDeleteCharReq&& P) 
 }
 
 void CCharClient::onDisconnected() {
-  logger_->warn("CCharClient::onDisconnected()"); //davidixx
+  logger_->trace("CCharClient::onDisconnected()");
   Core::SessionTable session{};
   Core::AccountTable table{};
   auto conn = Core::connectionPool.getConnection<Core::Osirose>();
@@ -269,7 +269,7 @@ void CCharClient::onDisconnected() {
 }
 
 bool CCharClient::sendCharSelectReply(RoseCommon::Packet::CliSelectCharReq&& P) {
-  logger_->warn("CCharClient::sendCharSelectReply"); //davidixx
+  logger_->trace("CCharClient::sendCharSelectReply");
   if (loginState_ == eSTATE::DEFAULT) {
     logger_->warn("Client {} is attempting to select a char before logging in.", get_id());
     return true;
@@ -289,7 +289,6 @@ bool CCharClient::sendCharSelectReply(RoseCommon::Packet::CliSelectCharReq&& P) 
 
   std::string query =
       fmt::format("CALL update_session_with_character({}, '{}');", sessionId_, characterRealId_[selected_id]);
-
   auto conn = Core::connectionPool.getConnection<Core::Osirose>();
   conn->execute(query);
 
@@ -306,6 +305,5 @@ bool CCharClient::sendCharSelectReply(RoseCommon::Packet::CliSelectCharReq&& P) 
       send(packet);
     }
   }
-
   return true;
 }

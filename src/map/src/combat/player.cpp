@@ -71,11 +71,8 @@ void Player::run_walk_decision(EntitySystem& entitySystem, RoseCommon::Entity en
 }
 
 void Player::toggle_player_move(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliToggleMove& packet) {
-    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-
 	Packet::CliToggleMove::ToggleMove moveType = packet.get_type();
 	auto& computedValues = entitySystem.get_component<Component::ComputedValues>(entity);
-	logger->warn("moveType is {}", moveType);
 
 	uint8_t moveToSend = moveType;
 	switch (moveType) {
@@ -115,7 +112,6 @@ void Player::toggle_player_move(EntitySystem& entitySystem, RoseCommon::Entity e
 	}
 	
 	auto pToggle = Packet::SrvToggleMove::create(static_cast<Packet::SrvToggleMove::ToggleMove>(moveToSend));
-	logger->warn("runSpd is {} moveMode is {}",computedValues.runSpeed, computedValues.moveMode);
 	pToggle.set_run_speed(computedValues.runSpeed);
 	auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
 	pToggle.set_object_id(basicInfo.id);
@@ -123,9 +119,6 @@ void Player::toggle_player_move(EntitySystem& entitySystem, RoseCommon::Entity e
 }
 
 void Player::set_animation(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliSetAnimation& packet) {
-    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-	logger->warn("emotion id is {}, value is {}", packet.get_id(), packet.get_value());
-
 	auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
 	auto pAnimation = Packet::SrvSetAnimation::create();
 	pAnimation.set_id(packet.get_id());
