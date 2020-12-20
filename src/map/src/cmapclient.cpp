@@ -71,6 +71,7 @@ CMapClient::CMapClient(std::unique_ptr<Core::INetwork> _sock, std::shared_ptr<En
 CMapClient::~CMapClient() {}
 
 bool CMapClient::handlePacket(uint8_t* _buffer) {
+    logger_ ->warn("GOT packet 0x{0:02x}", to_underlying(CRosePacket::type(_buffer)));
   switch (CRosePacket::type(_buffer)) {
     case ePacketType::PAKCS_ALIVE:
       if (login_state_ != eSTATE::LOGGEDIN) {
@@ -101,7 +102,7 @@ bool CMapClient::handlePacket(uint8_t* _buffer) {
     return CRoseClient::handlePacket(_buffer);
   }
   if (entitySystem->dispatch_packet(entity, RoseCommon::fetchPacket(_buffer))) {
-      logger_->debug("Accepted packet 0x{0:02x}", to_underlying(CRosePacket::type(_buffer)));
+      logger_->warn("Accepted packet 0x{0:02x}", to_underlying(CRosePacket::type(_buffer)));
       return true;
   }
   logger_->warn("Packet 0x{0:02x} not handled", to_underlying(CRosePacket::type(_buffer)));

@@ -80,6 +80,10 @@ inline bool is_spot_correct(const EntitySystem& entitySystem, RoseCommon::Entity
 }
 
 
+inline bool is_two_handed(uint16_t subtype) {
+    return ((subtype >= ItemSubType::TWOH_SWORD && subtype <= ItemSubType::DUAL_WEILD) && (subtype != ItemSubType::WAND));
+}
+
 inline bool is_spot_equipped(size_t spot) {
     return spot < EquippedPosition::MAX_EQUIP_ITEMS;
 }
@@ -229,7 +233,7 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
             }
         }
     }
-    if (from != entt::null) {
+    if (to_equip != entt::null) {
         const auto& lua = entitySystem.get_component<Component::ItemLua>(to_equip);
         if (const auto tmp = lua.api.lock(); tmp) {
             if (!tmp->on_equip(entity)) {
@@ -240,6 +244,8 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
     swap_item(entitySystem, entity, from, to);
     const auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
     const auto& item = entitySystem.get_component<RoseCommon::ItemDef>(to_equip);
+    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
+    logger->warn("item id is {}", item.id);
     {
         switch (item.type) {
             case ItemType::ITEM_RIDING:
@@ -250,6 +256,20 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
                 entitySystem.send_nearby(entity, packet);
                 break;
             }
+            // case ItemType::ITEM_WEAPON_L: //shield
+            // {
+            //     logger->warn("CASE ITEM_WEAPON_L");
+            //     if (inv.items[EquippedPosition::WEAPON_R] != entt::null) {
+            //         const auto& usedWeapon = entitySystem.get_component<RoseCommon::ItemDef>(inv.items[EquippedPosition::WEAPON_R]);
+            //         if (is_two_handed(usedWeapon.subtype))
+            //         {
+            //             // unequip_item(entitySystem, entity, (size_t)EquippedPosition::WEAPON_L);
+            //             logger->warn("trying to use shield while 2h weap");
+            //             swap_item(entitySystem, entity, from, to);
+            //             break;
+            //         }
+            //     }
+            // }
             default:
             {
                 const auto packet = RoseCommon::Packet::SrvEquipItem::create(basicInfo.id, to,
@@ -268,6 +288,13 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
     index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(equipped));
     packet.add_items(index);
     entitySystem.send_to(entity, packet);
+
+    if (item.type == ItemType::ITEM_WEAPON_R && (is_two_handed(item.subtype) == true) && (inv.items[EquippedPosition::WEAPON_L] != entt::null))
+    {
+        unequip_item(entitySystem, entity, (size_t)EquippedPosition::WEAPON_L);
+        logger->warn("I've removed a secondary weap");
+    }
+
     return ReturnValue::OK;
 }
 
@@ -311,7 +338,6 @@ ReturnValue Items::unequip_item(EntitySystem& entitySystem, RoseCommon::Entity e
             }
         }
     }
-
     RoseCommon::Packet::SrvSetItem::IndexAndItem index;
     index.set_index(to);
     index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(equipped));
@@ -400,8 +426,8 @@ bool Items::add_zuly(EntitySystem& entitySystem, RoseCommon::Entity entity, int6
 
 void Items::equip_item_packet(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliEquipItem& packet) {
     auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-    logger->trace("equip_item_packet()");
-    logger->trace("from {} to {}", packet.get_slotFrom(), packet.get_slotTo());
+    logger->warn("equip_item_packet()");
+    logger->warn("from {} to {}", packet.get_slotFrom(), packet.get_slotTo());
     const auto from = packet.get_slotFrom();
     const auto to = packet.get_slotTo();
     const auto res = from == 0 ? // we want to unequip something, 0 being a "fake" no-item flag
@@ -412,8 +438,8 @@ void Items::equip_item_packet(EntitySystem& entitySystem, RoseCommon::Entity ent
 
 void Items::equip_item_ride_packet(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliEquipItemRide& packet) {
     auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-    logger->trace("equip_item_ride_packet()");
-    logger->trace("from {} to {}", packet.get_index(), packet.get_slot() + RidingItem::BODY);
+    logger->warn("equip_item_ride_packet()");
+    logger->warn("from {} to {}", packet.get_index(), packet.get_slot() + RidingItem::BODY);
     const auto from = packet.get_index();
     const auto to = packet.get_slot() + RidingItem::BODY;
     const auto res = from == 0 ?
