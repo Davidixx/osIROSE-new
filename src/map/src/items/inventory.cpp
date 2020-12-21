@@ -222,6 +222,12 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
 
     const RoseCommon::Entity equipped = inv.items[to];
     const RoseCommon::Entity to_equip = inv.items[from];
+    const auto& item = entitySystem.get_component<RoseCommon::ItemDef>(to_equip);
+    if (item.type == ItemType::ITEM_WEAPON_R && (is_two_handed(item.subtype) == true) && (inv.items[EquippedPosition::WEAPON_L] != entt::null))
+    {
+        if (unequip_item(entitySystem, entity, (size_t)EquippedPosition::WEAPON_L) == ReturnValue::NO_SPACE) return ReturnValue::NO_SPACE;
+    }
+
     if (!is_spot_correct(entitySystem, to_equip, to)) {
         return ReturnValue::REQUIREMENTS_NOT_MET;
     }
@@ -243,9 +249,6 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
     }
     swap_item(entitySystem, entity, from, to);
     const auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
-    const auto& item = entitySystem.get_component<RoseCommon::ItemDef>(to_equip);
-    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-    logger->warn("item id is {}", item.id);
     {
         switch (item.type) {
             case ItemType::ITEM_RIDING:
@@ -288,12 +291,6 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
     index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(equipped));
     packet.add_items(index);
     entitySystem.send_to(entity, packet);
-
-    if (item.type == ItemType::ITEM_WEAPON_R && (is_two_handed(item.subtype) == true) && (inv.items[EquippedPosition::WEAPON_L] != entt::null))
-    {
-        unequip_item(entitySystem, entity, (size_t)EquippedPosition::WEAPON_L);
-        logger->warn("I've removed a secondary weap");
-    }
 
     return ReturnValue::OK;
 }
