@@ -14,11 +14,14 @@
 #include "srv_mouse_cmd.h"
 #include "srv_set_exp.h"
 #include "srv_set_hp_and_mp.h"
+#include "srv_stop.h"
 
 #include "components/basic_info.h"
 #include "components/combat.h"
 #include "components/computed_values.h"
 #include "components/destination.h"
+#include "components/inventory.h"
+#include "components/item.h"
 #include "components/level.h"
 #include "components/life.h"
 #include "components/lua.h"
@@ -40,7 +43,6 @@ using namespace RoseCommon;
 using namespace RoseCommon::Packet;
 
 void Combat::hp_request(EntitySystem& entitySystem, Entity entity, const CliHpReq& packet) {
-  auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
   if (packet.get_targetId()) {
     Entity t = entitySystem.get_entity_from_id(packet.get_targetId());
     if (t != entt::null) {
@@ -50,6 +52,22 @@ void Combat::hp_request(EntitySystem& entitySystem, Entity entity, const CliHpRe
       entitySystem.send_to(entity, p);
     }
   }
+}
+
+inline bool reduce_bullets(EntitySystem& entitySystem, Entity entity) {
+  auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
+  logger->warn("inside reduce_bullets");
+  uint8_t slot = 0;
+  slot = Items::has_bullets(entitySystem, entity);
+  if (slot != 0) {
+    RoseCommon::Entity bullets = Items::remove_item(entitySystem, entity, slot, 1);
+    const auto& i = entitySystem.get_component<Component::Item>(bullets);
+    if (i.count == 0) entitySystem.delete_entity(bullets);
+    logger->warn("im true out of reduce_bullets");
+    return true;
+  }
+  logger->warn("im false out of reduce_bullets");
+  return false;
 }
 
 void Combat::check_for_level_up(EntitySystem& entitySystem, Entity entity, uint16_t sourceId) {
@@ -123,8 +141,8 @@ float Combat::get_range_to(const EntitySystem& entitySystem, Entity character, E
 
 void Combat::attack(EntitySystem& entitySystem, Entity entity, const CliAttack& packet) {
   auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-  logger->trace("Combat::attack");
-  logger->trace("entity {}, target {}", entity, packet.get_targetId());
+  logger->warn("Combat::attack");
+  logger->warn("entity {}, target {}", entity, packet.get_targetId());
 
   const auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
   const auto& pos = entitySystem.get_component<Component::Position>(entity);
@@ -137,7 +155,7 @@ void Combat::attack(EntitySystem& entitySystem, Entity entity, const CliAttack& 
       auto& target = entitySystem.add_or_replace_component<Component::Target>(entity);
       target.target = t;
 
-      logger->debug("distance to target is {}", get_range_to(entitySystem, entity, t));
+      logger->warn("distance to target is {}", get_range_to(entitySystem, entity, t));
 
       // TODO: Check distance to target, if not in attack range, move into max attack range
       if (get_range_to(entitySystem, entity, t) > values.attackRange) {
@@ -150,22 +168,25 @@ void Combat::attack(EntitySystem& entitySystem, Entity entity, const CliAttack& 
         const float dx = pos.x - dest.x;
         const float dy = pos.y - dest.y;
         dest.dist = std::sqrt(dx * dx + dy * dy);
-
-        // auto p = SrvMouseCmd::create(basicInfo.id);
-        auto p = SrvAttack::create(basicInfo.id, packet.get_targetId());
-        // p.set_targetId(0);
-        p.set_x(dest.x);
-        p.set_y(dest.y);
-        p.set_z(0);
-        entitySystem.send_nearby(entity, p);
+        if ((Items::is_bullet_weapon(entitySystem, entity) && Items::has_bullets(entitySystem, entity) != 0) || !(Items::is_bullet_weapon(entitySystem, entity))) {
+          // auto p = SrvMouseCmd::create(basicInfo.id);
+          auto p = SrvAttack::create(basicInfo.id, packet.get_targetId());
+          // p.set_targetId(0);
+          p.set_x(dest.x);
+          p.set_y(dest.y);
+          p.set_z(0);
+          entitySystem.send_nearby(entity, p);
+        }
       } else {
         // This packet acts as an attack and mouse_cmd all in one, we don't want the mouse_cmd portion
         // of it as it can cause some issues with attack animations going off before it should
-        auto p = SrvAttack::create(basicInfo.id, packet.get_targetId());
-        p.set_x(pos.x);
-        p.set_y(pos.y);
-        p.set_z(0);
-        entitySystem.send_nearby(entity, p);
+        if ((Items::is_bullet_weapon(entitySystem, entity) && Items::has_bullets(entitySystem, entity) != 0) || !(Items::is_bullet_weapon(entitySystem, entity))) {
+          auto p = SrvAttack::create(basicInfo.id, packet.get_targetId());
+          p.set_x(pos.x);
+          p.set_y(pos.y);
+          p.set_z(0);
+          entitySystem.send_nearby(entity, p);
+        }
       }
     }
   }
@@ -184,7 +205,6 @@ void Combat::update(EntitySystem& entitySystem, Entity entity, uint32_t dt) {
   const auto& level = entitySystem.get_component<Component::Level>(entity);
   auto& life = entitySystem.get_component<Component::Life>(entity);
   auto& values = entitySystem.get_component<Component::ComputedValues>(entity);
-
   // TODO:: Update buffs
   // TODO:: Update HP
   values.regenDt += dt;
@@ -225,6 +245,7 @@ void Combat::update(EntitySystem& entitySystem, Entity entity, uint32_t dt) {
 
   // Check if there is damage queued
   if (entitySystem.has_component<Component::Combat>(entity)) {
+
     auto& queuedDamage = entitySystem.get_component<Component::Combat>(entity);
     int32_t adjusted_hp = life.hp;
     uint32_t total_applied_damage = 0;
@@ -374,16 +395,26 @@ void Combat::update(EntitySystem& entitySystem, Entity entity, uint32_t dt) {
           if (!entitySystem.has_component<Component::Combat>(target.target)) {
             entitySystem.add_component<Component::Combat>(target.target);
           }
+          if ((Items::is_bullet_weapon(entitySystem, entity) && reduce_bullets(entitySystem, entity)) || !(Items::is_bullet_weapon(entitySystem, entity))) {
+            logger->warn("queuing damage to target entity");
+            auto& damage = entitySystem.get_component<Component::Combat>(target.target);
 
-          logger->debug("queuing damage to target entity");
-          auto& damage = entitySystem.get_component<Component::Combat>(target.target);
-
-          uint32_t action = 0;
-          auto dmg_value = Calculations::get_damage(entitySystem, entity, target.target, 1);
-          if (dmg_value > MAX_DAMAGE) dmg_value = MAX_DAMAGE;
-          if (dmg_value > 0) action |= DAMAGE_ACTION_HIT;
-          damage.addDamage(basicInfo.id, action, dmg_value);
-          logger->debug("{} damage queued", damage.damage_.size());
+            uint32_t action = 0;
+            auto dmg_value = Calculations::get_damage(entitySystem, entity, target.target, 1);
+            if (dmg_value > MAX_DAMAGE) dmg_value = MAX_DAMAGE;
+            if (dmg_value > 0) action |= DAMAGE_ACTION_HIT;
+            damage.addDamage(basicInfo.id, action, dmg_value);
+            logger->warn("{} damage queued", damage.damage_.size());
+          } else {
+            //ADD REMOVE COMPONENTS LIKE DEST, TARGET, COMBAT.
+            const auto& pos = entitySystem.get_component<Component::Position>(entity);
+            const auto& pStop = RoseCommon::Packet::SrvStop::create(basicInfo.id, pos.x, pos.y, pos.z);
+            entitySystem.send_nearby(entity, pStop);
+            entitySystem.remove_component<Component::Combat>(entity);
+            entitySystem.remove_component<Component::Target>(entity);
+            entitySystem.remove_component<Component::Destination>(entity);
+          }
+          
         }
       } else {
         entitySystem.remove_component<Component::Target>(entity);
