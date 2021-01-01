@@ -55,18 +55,14 @@ void Combat::hp_request(EntitySystem& entitySystem, Entity entity, const CliHpRe
 }
 
 inline bool reduce_bullets(EntitySystem& entitySystem, Entity entity) {
-  auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-  logger->warn("inside reduce_bullets");
   uint8_t slot = 0;
   slot = Items::has_bullets(entitySystem, entity);
   if (slot != 0) {
     RoseCommon::Entity bullets = Items::remove_item(entitySystem, entity, slot, 1);
     const auto& i = entitySystem.get_component<Component::Item>(bullets);
     if (i.count == 0) entitySystem.delete_entity(bullets);
-    logger->warn("im true out of reduce_bullets");
     return true;
   }
-  logger->warn("im false out of reduce_bullets");
   return false;
 }
 
@@ -141,8 +137,8 @@ float Combat::get_range_to(const EntitySystem& entitySystem, Entity character, E
 
 void Combat::attack(EntitySystem& entitySystem, Entity entity, const CliAttack& packet) {
   auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-  logger->warn("Combat::attack");
-  logger->warn("entity {}, target {}", entity, packet.get_targetId());
+  logger->trace("Combat::attack");
+  logger->trace("entity {}, target {}", entity, packet.get_targetId());
 
   const auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
   const auto& pos = entitySystem.get_component<Component::Position>(entity);
@@ -155,7 +151,7 @@ void Combat::attack(EntitySystem& entitySystem, Entity entity, const CliAttack& 
       auto& target = entitySystem.add_or_replace_component<Component::Target>(entity);
       target.target = t;
 
-      logger->warn("distance to target is {}", get_range_to(entitySystem, entity, t));
+      logger->debug("distance to target is {}", get_range_to(entitySystem, entity, t));
 
       // TODO: Check distance to target, if not in attack range, move into max attack range
       if (get_range_to(entitySystem, entity, t) > values.attackRange) {
@@ -396,7 +392,7 @@ void Combat::update(EntitySystem& entitySystem, Entity entity, uint32_t dt) {
             entitySystem.add_component<Component::Combat>(target.target);
           }
           if ((Items::is_bullet_weapon(entitySystem, entity) && reduce_bullets(entitySystem, entity)) || !(Items::is_bullet_weapon(entitySystem, entity))) {
-            logger->warn("queuing damage to target entity");
+            logger->debug("queuing damage to target entity");
             auto& damage = entitySystem.get_component<Component::Combat>(target.target);
 
             uint32_t action = 0;
@@ -404,7 +400,7 @@ void Combat::update(EntitySystem& entitySystem, Entity entity, uint32_t dt) {
             if (dmg_value > MAX_DAMAGE) dmg_value = MAX_DAMAGE;
             if (dmg_value > 0) action |= DAMAGE_ACTION_HIT;
             damage.addDamage(basicInfo.id, action, dmg_value);
-            logger->warn("{} damage queued", damage.damage_.size());
+            logger->debug("{} damage queued", damage.damage_.size());
           } else {
             //ADD REMOVE COMPONENTS LIKE DEST, TARGET, COMBAT.
             const auto& pos = entitySystem.get_component<Component::Position>(entity);

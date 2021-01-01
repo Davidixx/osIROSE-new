@@ -105,14 +105,12 @@ inline size_t get_item_tab(ItemType type) {
 }
 
 bool Items::is_bullet_weapon(const EntitySystem& entitySystem, RoseCommon::Entity entity) {
-    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
     const auto& inv = entitySystem.get_component<Component::Inventory>(entity);
     const auto& weaponInfo = entitySystem.get_component<RoseCommon::ItemDef>(inv.items[EquippedPosition::WEAPON_R]);
     return ((weaponInfo.subtype >= ItemSubType::BOW && weaponInfo.subtype <= ItemSubType::LAUNCHER) || (weaponInfo.subtype == ItemSubType::XBOW));
 }
 
 uint8_t Items::has_bullets(const EntitySystem& entitySystem, RoseCommon::Entity entity) {
-    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
     const auto& inv = entitySystem.get_component<Component::Inventory>(entity);
     uint8_t slot = 0;
     if (inv.items[EquippedPosition::WEAPON_R] != entt::null) {
@@ -252,13 +250,7 @@ void Items::set_projectile(EntitySystem& entitySystem, RoseCommon::Entity entity
             if (item.count == 0)  {
                 entitySystem.delete_entity(remove_item(entitySystem, entity, from, item.count));
             } else {
-                unequip_item(entitySystem, entity, to); //only if success
-                // const auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
-                // RoseCommon::Packet::SrvEquipProjectile::ProjectileData projectData;
-                // projectData.set_type(projType);
-                // projectData.set_id(to);
-                // auto packet = RoseCommon::Packet::SrvEquipProjectile::create(basicInfo.id, projectData);
-                // entitySystem.send_to(entity, packet);
+                unequip_item(entitySystem, entity, to);
             }
         } else { //Equip the item
             if(inv.items[from] != entt::null) {
