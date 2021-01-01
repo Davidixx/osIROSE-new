@@ -68,7 +68,14 @@ inline bool is_spot_correct(const EntitySystem& entitySystem, RoseCommon::Entity
         case ItemType::ITEM_BACKPACK:
             return pos == EquippedPosition::BACKPACK;
         case ItemType::ITEM_RING:
-            return pos == EquippedPosition::RING;
+            switch (item.subtype) {
+                case ItemSubType::RRING:
+                    return pos == EquippedPosition::RING;
+                case ItemSubType::NNECKLACE:
+                    return pos == EquippedPosition::NECKLACE;
+                case ItemSubType::EARRING:
+                    return pos == EquippedPosition::EARING;
+            }
         case ItemType::ITEM_WEAPON_R:
             return pos == EquippedPosition::WEAPON_R;
         case ItemType::ITEM_WEAPON_L:
@@ -269,12 +276,15 @@ void Items::set_projectile(EntitySystem& entitySystem, RoseCommon::Entity entity
 }
 
 ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity entity, size_t from, size_t to) {
+    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
     const auto& inv = entitySystem.get_component<Component::Inventory>(entity);
 
     if (from < decltype(inv.getInventory())::offset() || from >= decltype(inv.getInventory())::size()) {
+        logger->warn("fuck me inside offset1");
         return ReturnValue::WRONG_INDEX;
     }
     if (to < decltype(inv.getEquipped())::offset() || (to >= decltype(inv.getEquipped())::size() && to < FIRST_BULLET_SLOT) || to >= MAX_ITEMS) {
+        logger->warn("fuck me inside offset2");
         return ReturnValue::WRONG_INDEX;
     }
     const RoseCommon::Entity equipped = inv.items[to];
@@ -284,8 +294,10 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
     {
         if (unequip_item(entitySystem, entity, (size_t)EquippedPosition::WEAPON_L) == ReturnValue::NO_SPACE) return ReturnValue::NO_SPACE;
     }
+    logger->warn("after item_r_weap");
 
     if (!is_spot_correct(entitySystem, to_equip, to)) {
+        logger->warn("spot isnt correct");
         return ReturnValue::REQUIREMENTS_NOT_MET;
     }
     if (equipped != entt::null) {
@@ -304,6 +316,7 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
             }
         }
     }
+    logger->warn("inside nice place");
     swap_item(entitySystem, entity, from, to);
     const auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
     {
@@ -318,6 +331,7 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
             }
             default:
             {
+                logger->warn("inside default");
                 const auto packet = RoseCommon::Packet::SrvEquipItem::create(basicInfo.id, to,
                     entitySystem.item_to_equipped<RoseCommon::Packet::SrvEquipItem>(inv.items[to]));
                 entitySystem.send_nearby(entity, packet);
@@ -326,6 +340,7 @@ ReturnValue Items::equip_item(EntitySystem& entitySystem, RoseCommon::Entity ent
         }
     }
 
+    logger->warn("sending packet!");
     RoseCommon::Packet::SrvSetItem::IndexAndItem index; index.set_index(to);
     index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(to_equip));
     auto packet = RoseCommon::Packet::SrvSetItem::create();
