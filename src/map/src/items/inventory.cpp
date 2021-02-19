@@ -474,22 +474,22 @@ void Items::swap_inv_items(EntitySystem& entitySystem, RoseCommon::Entity entity
     const RoseCommon::Entity src_item = inv.items[srcPos];
     const RoseCommon::Entity tar_item = inv.items[tarPos];
 
-    inv.items[srcPos] = tar_item;
-    inv.items[tarPos] = src_item;
-    // swap_item(entitySystem, entity, srcPos, tarPos);
+    // inv.items[srcPos] = tar_item;
+    // inv.items[tarPos] = src_item;
+    swap_item(entitySystem, entity, srcPos, tarPos);
 
     // Send SrvSwapItem
-    RoseCommon::Packet::SrvSetItem::IndexAndItem index; index.set_index(srcPos);
+    RoseCommon::Packet::SrvSetItem::IndexAndItem index; index.set_index(tarPos);
     index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(src_item));
     auto pSwap = RoseCommon::Packet::SrvSetItem::create();
     pSwap.add_items(index);
-    index.set_index(tarPos);
+    index.set_index(srcPos);
     index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(tar_item));
     pSwap.add_items(index);
     entitySystem.send_to(entity, pSwap);
     
-    // auto pSwapNew = RoseCommon::Packet::SrvSwapItem::create();
-    // entitySystem.send_to(entity, pSwapNew);
+    auto pSwapNew = RoseCommon::Packet::SrvSwapItem::create();
+    entitySystem.send_to(entity, pSwapNew);
 }
 
 void Items::equip_item_packet(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliEquipItem& packet) {
