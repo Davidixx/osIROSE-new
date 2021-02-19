@@ -212,6 +212,7 @@ EntitySystem::EntitySystem(uint16_t map_id, CMapServer *server, std::chrono::mil
     register_dispatcher(std::function{Items::equip_item_ride_packet});
     register_dispatcher(std::function{Items::drop_item_packet});
     register_dispatcher(std::function{Items::set_projectile});
+    register_dispatcher(std::function{Items::swap_inv_items});
 
     // load npc/mob/warpgates/spawn points lua
     lua_loader.load_file(Core::Config::getInstance().mapServer().luaScript);

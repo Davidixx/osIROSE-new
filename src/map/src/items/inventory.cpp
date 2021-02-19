@@ -16,6 +16,7 @@
 #include "srv_set_item.h"
 #include "srv_set_money.h"
 #include "srv_equip_projectile.h"
+#include "srv_swap_item.h"
 
 #include <limits>
 
@@ -110,16 +111,14 @@ bool Items::is_bullet_weapon(const EntitySystem& entitySystem, RoseCommon::Entit
     return ((weaponInfo.subtype >= ItemSubType::BOW && weaponInfo.subtype <= ItemSubType::LAUNCHER) || (weaponInfo.subtype == ItemSubType::XBOW));
 }
 
-uint8_t Items::get_bullet_slot(const EntitySystem& entitySystem, RoseCommon::Entity entity) {
+RoseCommon::Entity Items::get_bullet_slot(const EntitySystem& entitySystem, RoseCommon::Entity entity) {
     const auto& inv = entitySystem.get_component<Component::Inventory>(entity);
     uint8_t slot = 0;
     if (inv.items[EquippedPosition::WEAPON_R] != entt::null) {
         const auto& weaponInfo = entitySystem.get_component<RoseCommon::ItemDef>(inv.items[EquippedPosition::WEAPON_R]);
         slot = FIRST_BULLET_SLOT + (weaponInfo.subtype % 10 - 1);
-        if (inv.items[slot] == entt::null)
-            slot = 0;
     }
-    return slot;
+    return inv.items[slot];
 }
 
 size_t Items::get_first_available_spot(const EntitySystem& entitySystem, RoseCommon::Entity entity, RoseCommon::Entity item) {
@@ -193,11 +192,15 @@ ReturnValue Items::add_item(EntitySystem& entitySystem, RoseCommon::Entity entit
     return ReturnValue::OK;
 }
 
-RoseCommon::Entity Items::remove_item(EntitySystem& entitySystem, RoseCommon::Entity entity, size_t pos, uint32_t quantity) {
+RoseCommon::Entity Items::remove_item(EntitySystem& entitySystem, RoseCommon::Entity entity, RoseCommon::Entity item, uint32_t quantity) {
     auto& inv = entitySystem.get_component<Component::Inventory>(entity);
-    RoseCommon::Entity item = inv.items[pos];
     auto& i = entitySystem.get_component<Component::Item>(item);
     const auto& it = entitySystem.get_component<ItemDef>(item);
+    uint8_t pos = 0;
+    for (uint j = 0; j < MAX_ITEMS; j++)
+    {
+        if (inv.items[j] == item) pos = j;
+    }
     if (i.count < quantity) {
         return entt::null;
     }
@@ -248,7 +251,7 @@ void Items::set_projectile(EntitySystem& entitySystem, RoseCommon::Entity entity
         if (from == 0) { //Unequip the item
             const auto& item = entitySystem.get_component<Component::Item>(inv.items[to]);
             if (item.count == 0)  {
-                entitySystem.delete_entity(remove_item(entitySystem, entity, from, item.count));
+                entitySystem.delete_entity(remove_item(entitySystem, entity, inv.items[from], item.count));
             } else {
                 unequip_item(entitySystem, entity, to);
             }
@@ -462,6 +465,33 @@ bool Items::add_zuly(EntitySystem& entitySystem, RoseCommon::Entity entity, int6
     return true;
 }
 
+void Items::swap_inv_items(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliSwapItem& packet) {
+    auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
+    size_t srcPos = (size_t)packet.get_sourcePosition();
+    size_t tarPos = (size_t)packet.get_targetPosition();
+    auto& inv = entitySystem.get_component<Component::Inventory>(entity);
+    logger->warn("Source pos is {} Target pos is {}", srcPos, tarPos);
+    const RoseCommon::Entity src_item = inv.items[srcPos];
+    const RoseCommon::Entity tar_item = inv.items[tarPos];
+
+    inv.items[srcPos] = tar_item;
+    inv.items[tarPos] = src_item;
+    // swap_item(entitySystem, entity, srcPos, tarPos);
+
+    // Send SrvSwapItem
+    RoseCommon::Packet::SrvSetItem::IndexAndItem index; index.set_index(srcPos);
+    index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(src_item));
+    auto pSwap = RoseCommon::Packet::SrvSetItem::create();
+    pSwap.add_items(index);
+    index.set_index(tarPos);
+    index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(tar_item));
+    pSwap.add_items(index);
+    entitySystem.send_to(entity, pSwap);
+    
+    // auto pSwapNew = RoseCommon::Packet::SrvSwapItem::create();
+    // entitySystem.send_to(entity, pSwapNew);
+}
+
 void Items::equip_item_packet(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliEquipItem& packet) {
     auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
     logger->warn("equip_item_packet()");
@@ -507,7 +537,7 @@ void Items::drop_item_packet(EntitySystem& entitySystem, RoseCommon::Entity enti
             return; // we don't have enough zuly to remove
         }
     } else {
-        item = remove_item(entitySystem, entity, index, quantity);
+        item = remove_item(entitySystem, entity, inv.items[index], quantity);
     }
     const auto& pos = entitySystem.get_component<Component::Position>(entity);
     const auto [x, y] = Core::Random::getInstance().random_in_circle(pos.x, pos.y, DROP_RANGE);

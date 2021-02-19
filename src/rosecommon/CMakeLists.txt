@@ -133,6 +133,7 @@ set(IDL_FILES
   packets/cli_stop_moving.xml
   packets/cli_stop.xml
   packets/cli_store_trade_req.xml
+  packets/cli_swap_item.xml
   packets/cli_teleport_req.xml
   packets/cli_toggle_move.xml
   packets/cli_trade_item.xml
@@ -248,6 +249,7 @@ set(IDL_FILES
   packets/srv_stop_moving.xml
   packets/srv_stop.xml
   packets/srv_store_trade_reply.xml
+  packets/srv_swap_item.xml
   packets/srv_switch_server.xml
   packets/srv_teleport_reply.xml
   packets/srv_toggle_move.xml

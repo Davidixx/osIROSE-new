@@ -1,0 +1,4 @@
+<packet ePacketType = "PAKCS_SWAP_ITEM">
+  <element name = "sourcePosition" type = "uint8_t" default = "0" />
+  <element name = "targetPosition" type = "uint8_t" default = "0" />
+</packet>

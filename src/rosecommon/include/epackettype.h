@@ -111,6 +111,8 @@ enum class ePacketType : uint16_t {
   PAKCS_QUEST_DATA_REQ = 0x730,
   PAKWC_QUEST_DATA_REPLY = PAKCS_QUEST_DATA_REQ,
   PAKWC_NPC_EVENT,
+  PAKCS_SWAP_ITEM = 0x732,  //davidixx
+  PAKWC_SWAP_ITEM = PAKCS_SWAP_ITEM, //davidixx
 
   PAKWC_GM_COMMAND_CODE = 0x751, // This is for updating client side varibles
   PAKCS_CHANGE_MAP_REQ = 0x753,
