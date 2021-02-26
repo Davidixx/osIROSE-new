@@ -249,7 +249,6 @@ set(IDL_FILES
   packets/srv_stop_moving.xml
   packets/srv_stop.xml
   packets/srv_store_trade_reply.xml
-  packets/srv_swap_item.xml
   packets/srv_switch_server.xml
   packets/srv_teleport_reply.xml
   packets/srv_toggle_move.xml

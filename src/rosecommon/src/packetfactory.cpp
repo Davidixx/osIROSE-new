@@ -24,7 +24,7 @@
 #include "cli_shout_chat.h"
 #include "cli_toggle_move.h"
 #include "cli_set_animation.h"
-#include "cli_swap_item.h" //davidixx
+#include "cli_swap_item.h"
 #include "cli_srv_select_req.h"
 #include "cli_stop_moving.h"
 #include "cli_teleport_req.h"
@@ -68,7 +68,6 @@
 #include "srv_equip_item_ride.h"
 #include "srv_equip_projectile.h"
 #include "srv_stop.h"
-#include "srv_swap_item.h" //davidixx
 
 using namespace RoseCommon;
 using namespace RoseCommon::Packet;
@@ -148,5 +147,4 @@ void RoseCommon::register_send_packets() {
     REGISTER_SEND_PACKET(ePacketType::PAKWC_WHISPER_CHAT, SrvWhisperChat);
     REGISTER_SEND_PACKET(ePacketType::PAKWC_EQUIP_PROJECTILE, SrvEquipProjectile);
     REGISTER_SEND_PACKET(ePacketType::PAKWC_STOP, SrvStop);
-    REGISTER_SEND_PACKET(ePacketType::PAKWC_SWAP_ITEM, SrvSwapItem);
 }

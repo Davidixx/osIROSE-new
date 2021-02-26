@@ -16,7 +16,6 @@
 #include "srv_set_item.h"
 #include "srv_set_money.h"
 #include "srv_equip_projectile.h"
-#include "srv_swap_item.h"
 
 #include <limits>
 
@@ -467,35 +466,35 @@ bool Items::add_zuly(EntitySystem& entitySystem, RoseCommon::Entity entity, int6
 
 void Items::swap_inv_items(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliSwapItem& packet) {
     auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-    size_t srcPos = (size_t)packet.get_sourcePosition();
-    size_t tarPos = (size_t)packet.get_targetPosition();
-    auto& inv = entitySystem.get_component<Component::Inventory>(entity);
-    logger->warn("Source pos is {} Target pos is {}", srcPos, tarPos);
-    const RoseCommon::Entity src_item = inv.items[srcPos];
-    const RoseCommon::Entity tar_item = inv.items[tarPos];
+    size_t src_pos = (size_t)packet.get_sourcePosition();
+    size_t tar_pos = (size_t)packet.get_targetPosition();
+    logger->warn("Source pos is {} Target pos is {}", src_pos, tar_pos);
+    
+    const auto& inv = entitySystem.get_component<Component::Inventory>(entity);
+    const RoseCommon::Entity src_item = inv.items[src_pos];
+    const RoseCommon::Entity tar_item = inv.items[tar_pos];
 
-    // inv.items[srcPos] = tar_item;
-    // inv.items[tarPos] = src_item;
-    swap_item(entitySystem, entity, srcPos, tarPos);
+    swap_item(entitySystem, entity, src_pos, tar_pos);
 
-    // Send SrvSwapItem
-    RoseCommon::Packet::SrvSetItem::IndexAndItem index; index.set_index(tarPos);
+    // Send SrvSwapItem - check if target is entt::null
+    RoseCommon::Packet::SrvSetItem::IndexAndItem index; index.set_index(tar_pos);
     index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(src_item));
     auto pSwap = RoseCommon::Packet::SrvSetItem::create();
     pSwap.add_items(index);
-    index.set_index(srcPos);
+    index.set_index(src_pos);
+    if (tar_item == entt::null) {
+        index.set_item({});
+    } else {
     index.set_item(entitySystem.item_to_item<RoseCommon::Packet::SrvSetItem>(tar_item));
+    }
     pSwap.add_items(index);
     entitySystem.send_to(entity, pSwap);
-    
-    auto pSwapNew = RoseCommon::Packet::SrvSwapItem::create();
-    entitySystem.send_to(entity, pSwapNew);
 }
 
 void Items::equip_item_packet(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliEquipItem& packet) {
     auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-    logger->warn("equip_item_packet()");
-    logger->warn("from {} to {}", packet.get_slotFrom(), packet.get_slotTo());
+    logger->trace("equip_item_packet()");
+    logger->trace("from {} to {}", packet.get_slotFrom(), packet.get_slotTo());
     const auto from = packet.get_slotFrom();
     const auto to = packet.get_slotTo();
     const auto res = from == 0 ? // we want to unequip something, 0 being a "fake" no-item flag
@@ -506,8 +505,8 @@ void Items::equip_item_packet(EntitySystem& entitySystem, RoseCommon::Entity ent
 
 void Items::equip_item_ride_packet(EntitySystem& entitySystem, RoseCommon::Entity entity, const RoseCommon::Packet::CliEquipItemRide& packet) {
     auto logger = Core::CLog::GetLogger(Core::log_type::GENERAL).lock();
-    logger->warn("equip_item_ride_packet()");
-    logger->warn("from {} to {}", packet.get_index(), packet.get_slot() + RidingItem::BODY);
+    logger->trace("equip_item_ride_packet()");
+    logger->trace("from {} to {}", packet.get_index(), packet.get_slot() + RidingItem::BODY);
     const auto from = packet.get_index();
     const auto to = packet.get_slot() + RidingItem::BODY;
     const auto res = from == 0 ?

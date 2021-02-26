@@ -609,6 +609,7 @@ RoseCommon::Entity EntitySystem::load_character(uint32_t charId, uint16_t access
         item.is_zuly = false;
         auto to_emplace = load_item(row.itemtype, row.itemid, item);
         if (is_inventory) {
+            logger->warn("Items name {} place is {}", row.itemid, row.slot);
             inventory.items[row.slot] = to_emplace;
         } else {
             wishlist.items[row.slot] = to_emplace;

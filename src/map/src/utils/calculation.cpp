@@ -78,7 +78,19 @@ float get_attackspeed(EntitySystem& entitySystem, RoseCommon::Entity entity) {
 
 int get_weight(EntitySystem& entitySystem, RoseCommon::Entity entity) { return 0; }
 
-int get_maxweight(EntitySystem& entitySystem, RoseCommon::Entity entity) { return 0; }
+int get_maxweight(EntitySystem& entitySystem, RoseCommon::Entity entity) { return 0;}
+//   const auto& stats = entitySystem.get_component<Component::Stats>(entity);
+//   const auto& level = entitySystem.get_component<Component::Level>(entity);
+
+//   int max_weight = (int)(1100 + (level.level * 5) + (stats.str * 6);
+//   // add skill
+//   // add backpack
+//   // const auto& inv = entitySystem.get_component<Component::Inventory>(entity);
+//   // RoseCommon::Entity back = inv.items[EquippedPosition::BACKPACK];
+//   // const auto& i = entitySystem.get_component<RoseCommon::ItemDef>(back);
+//   // add apprasial
+//   return max_weight;
+//  }
 
 int get_maxhp(EntitySystem& entitySystem, RoseCommon::Entity entity) {
   auto& basicInfo = entitySystem.get_component<Component::BasicInfo>(entity);
